@@ -47,7 +47,7 @@ function App() {
         search: searchTerm,
         category: selectedCategory,
         page: currentPage,
-        limit: 9
+        limit: 10
       });
       setProducts(response.data);
       setTotalPages(response.pagination.pages);
@@ -131,13 +131,6 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="container">
-          <h1>🛍️ Product Catalog</h1>
-          <p className="subtitle">Full-stack aplikace s Redis Cache</p>
-        </div>
-      </header>
-
       <main className="container">
         {/* Cache statistiky */}
         <CacheStats onInvalidate={handleInvalidateCache} />
@@ -233,11 +226,6 @@ function App() {
         )}
       </main>
 
-      <footer className="app-footer">
-        <div className="container">
-          <p>Redis Cache Demo © 2024 | Made with ❤️</p>
-        </div>
-      </footer>
     </div>
   );
 }

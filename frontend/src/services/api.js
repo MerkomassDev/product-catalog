@@ -77,6 +77,13 @@ class API {
       method: 'POST',
     });
   }
+
+  async resetCacheStats() {
+    return await this.request('/api/products/stats/cache/reset', {
+      method: 'POST',
+    });
+  }
+
 }
 
 export default new API();

@@ -14,7 +14,7 @@ class ProductController {
   static async getAllProducts(req, res, next) {
     try {
       requestStats.totalRequests++;
-      
+
       const { search, category, page = 1, limit = 10 } = req.query;
       const offset = (page - 1) * limit;
 
@@ -65,9 +65,9 @@ class ProductController {
         // Cache MISS - načtení z databáze
         requestStats.cacheMisses++;
         console.log(`❌ CACHE MISS - Product ID: ${id}`);
-        
+
         product = await Product.findById(id);
-        
+
         if (!product) {
           return res.status(404).json({
             success: false,
@@ -205,7 +205,7 @@ class ProductController {
   static async getCacheStats(req, res, next) {
     try {
       const redisStats = await cacheHelpers.getStats();
-      
+
       res.json({
         success: true,
         data: {
@@ -214,8 +214,8 @@ class ProductController {
             cacheHits: requestStats.cacheHits,
             cacheMisses: requestStats.cacheMisses,
             hitRate: requestStats.totalRequests > 0
-              ? ((requestStats.cacheHits / requestStats.totalRequests) * 100).toFixed(2)
-              : 0
+            ? ((requestStats.cacheHits / requestStats.totalRequests) * 100).toFixed(2)
+            : 0
           },
           redis: redisStats
         }
@@ -229,10 +229,35 @@ class ProductController {
   static async invalidateCache(req, res, next) {
     try {
       await cacheHelpers.invalidateAll();
-      
+
       res.json({
         success: true,
         message: 'Cache byla úspěšně vyprázdněna'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+  static async resetCacheStats(req, res, next) {
+    try {
+      // Reset statistik
+      requestStats.totalRequests = 0;
+      requestStats.cacheHits = 0;
+      requestStats.cacheMisses = 0;
+
+      console.log('🔄 Cache statistiky byly resetovány');
+
+      res.json({
+        success: true,
+        message: 'Statistiky byly úspěšně resetovány',
+        data: {
+          application: {
+            totalRequests: 0,
+            cacheHits: 0,
+            cacheMisses: 0,
+            hitRate: 0
+          }
+        }
       });
     } catch (error) {
       next(error);

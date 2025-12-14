@@ -33,6 +33,7 @@ router.get('/', ProductController.getAllProducts);
 router.get('/categories', ProductController.getCategories);
 router.get('/stats/cache', ProductController.getCacheStats);
 router.post('/cache/invalidate', ProductController.invalidateCache);
+router.post('/stats/cache/reset', ProductController.resetCacheStats);
 router.get('/:id', ProductController.getProductById);
 router.post('/', productValidation, ProductController.createProduct);
 router.put('/:id', productValidation, ProductController.updateProduct);

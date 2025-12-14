@@ -23,6 +23,21 @@ function CacheStats({ onInvalidate }) {
     }
   };
 
+    const handleResetStats = async () => {
+    if (!window.confirm('Opravdu chcete resetovat cache statistiky?')) {
+      return;
+    }
+
+    try {
+      await api.resetCacheStats();
+      await loadStats(); // Reload stats po resetu
+      alert('✅ Statistiky byly resetovány');
+    } catch (error) {
+      console.error('Chyba při resetování statistik:', error);
+      alert('❌ Chyba při resetování statistik');
+    }
+  };
+
   if (loading) {
     return (
       <div className="cache-stats">
@@ -41,11 +56,22 @@ function CacheStats({ onInvalidate }) {
 
   return (
     <div className="cache-stats">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      {/* ✅ ZMĚŇ tuto sekci - přidej druhé tlačítko */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '20px' 
+      }}>
         <h2>📊 Cache Statistiky</h2>
-        <button onClick={onInvalidate} className="btn btn-danger">
-          🗑️ Vyprázdnit cache
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={handleResetStats} className="btn btn-warning">
+            🔄 Resetovat statistiky
+          </button>
+          <button onClick={onInvalidate} className="btn btn-danger">
+            🗑️ Vyprázdnit cache
+          </button>
+        </div>
       </div>
 
       <div className="stats-grid">
