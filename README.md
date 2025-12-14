@@ -1,44 +1,50 @@
-
-# 🛍️ Product Catalog - Redis Cache Demo
+# Product Catalog - Redis Cache Demo
 
 Full-stack webová aplikace pro správu produktového katalogu s implementací Redis cache pro optimalizaci výkonu.
 
-## 🎯 Funkce
+## Funkce
 
-- ✅ CRUD operace pro produkty (Create, Read, Update, Delete)
-- ⚡ Redis cache pro rychlé načítání dat
-- 🔍 Vyhledávání a filtrování produktů
-- 📊 Real-time statistiky cache (hit/miss rate)
-- 🎨 Moderní React UI
-- 🐳 Kompletní Dockerizace
-- 📦 PostgreSQL databáze s persistencí
+- CRUD operace pro produkty (Create, Read, Update, Delete)
+- Redis cache pro rychlé načítání dat
+- Vyhledávání a filtrování produktů
+- Real-time statistiky cache (hit/miss rate)
+- Moderní React UI
+- Kompletní Dockerizace
+- PostgreSQL databáze s persistencí
 
-## 🏗️ Architektura
+## Architektura
 
+```
 ┌─────────────────────────────────────────────────────┐
-│                    Frontend (React)                  │
-│              Port 3000 - Nginx                       │
+│                    Frontend (React)                 │
+│              Port 3000 - Nginx                      │
 └────────────────────┬────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────┐
-│              Backend (Node.js/Express)               │
-│                   Port 5000                          │
-└──────────┬────────────────────────┬──────────────────┘
+│              Backend (Node.js/Express)              │
+│                   Port 5000                         │
+└──────────┬────────────────────────┬─────────────────┘
            │                        │
            ▼                        ▼
-┌──────────────────┐    ┌──────────────────────────────┐
-│  Redis Stack     │    │     PostgreSQL 15            │
-│  Port 6379       │    │     Port 5432                │
-│  Port 8001 (UI)  │    │                              │
-└──────────────────┘    └──────────────────────────────┘
+┌──────────────────┐    ┌─────────────────────────────┐
+│  Redis Stack     │    │     PostgreSQL 15           │
+│  Port 6379       │    │     Port 5432               │
+│  Port 8001 (UI)  │    │                             │
+└──────────────────┘    └─────────────────────────────┘
+```
 
 ### Cache Flow
+
+Data se načítají primárně z Redis cache
+Při absenci v cache se načtou z PostgreSQL
+Načtená data se uloží do cache s expirací 10 minut
+Při aktualizaci/smazání se cache invaliduje
 
 1. **Read Request:**
    - Frontend → Backend
    - Backend kontroluje Redis cache
-   - **Cache HIT**: Vrátí data z Redis (rychlé ⚡)
+   - **Cache HIT**: Vrátí data z Redis 
    - **Cache MISS**: Načte z PostgreSQL → Uloží do Redis → Vrátí data
 
 2. **Update/Delete:**
@@ -48,20 +54,28 @@ Full-stack webová aplikace pro správu produktového katalogu s implementací R
 
 3. **Cache TTL:** 600s (10 minut) - konfigurovatelné
 
-## 🚀 Rychlý start
 
-### Požadavky
+## Požadavky
 
-- Docker Desktop (nebo Docker + Docker Compose)
-- Git
-- 4GB+ volné RAM
-- Volné porty: 3000, 5000, 5432, 6379, 8001
+Před spuštěním aplikace je potřeba mít nainstalováno:
+
+- **Docker** verze 20.10 nebo vyšší
+- **Docker Compose** verze 2.0 nebo vyšší
+- **Git**
+
+Ověření verzí:
+```bash
+docker --version
+docker-compose --version
+git --version
+```
+
 
 ### Instalace a spuštění
 
 1. **Klonování repozitáře:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/MerkomassDev/product-catalog
 cd product-catalog
 ```
 
@@ -75,16 +89,19 @@ docker-compose up --build -d
 docker-compose ps
 ```
 
-Všechny služby by měly být ve stavu `Up`.
-
 4. **Přístup k aplikaci:**
 
-- 🌐 **Frontend:** http://localhost:3000
-- 🔧 **Backend API:** http://localhost:5000
-- 🗄️ **RedisInsight:** http://localhost:8001
-- 📊 **Health Check:** http://localhost:5000/health
+- **Frontend:** http://localhost:3000
+- **RedisInsight:** http://localhost:8001
 
-## 📋 API Endpoints
+5. **Ukončení:**
+
+```bash
+docker-compose down -v  # Odstranění dat
+```
+
+
+## API Endpoints
 
 ### Products
 
@@ -111,7 +128,7 @@ POST   /api/products/cache/invalidate  - Vyprázdnění cache
 - `page` - Číslo stránky (default: 1)
 - `limit` - Počet položek (default: 10)
 
-## 🧪 Testování Cache
+## Testování Cache
 
 ### 1. Cache MISS → HIT test
 
@@ -130,14 +147,14 @@ docker-compose logs -f backend
 
 Měli byste vidět:
 ```
-❌ CACHE MISS - Product ID: 1
-💾 Produkt uložen do cache - ID: 1
-✅ CACHE HIT - Product ID: 1
+CACHE MISS - Product ID: 1
+Produkt uložen do cache - ID: 1
+CACHE HIT - Product ID: 1
 ```
 
 ### 2. Sledování cache statistik
 
-Frontend: Sekce "📊 Cache Statistiky" se aktualizuje každých 5 sekund
+Frontend: Sekce "Cache Statistiky" se aktualizuje každých 5 sekund
 
 Backend:
 ```bash
@@ -162,62 +179,8 @@ curl -X PUT http://localhost:5000/api/products/1 \
 curl http://localhost:5000/api/products/1
 ```
 
-## 🛠️ Užitečné příkazy
 
-### Docker Compose
-
-```bash
-# Spuštění
-docker-compose up -d
-
-# Rebuild a spuštění
-docker-compose up --build -d
-
-# Zastavení
-docker-compose down
-
-# Zastavení + smazání volumes (DATA LOSS!)
-docker-compose down -v
-
-# Zobrazení logů
-docker-compose logs -f
-
-# Logy konkrétní služby
-docker-compose logs -f backend
-docker-compose logs -f redis
-
-# Restart služby
-docker-compose restart backend
-```
-
-### Přímý přístup k službám
-
-```bash
-# PostgreSQL
-docker-compose exec postgres psql -U postgres -d productdb
-
-# Redis CLI
-docker-compose exec redis redis-cli
-
-# Backend shell
-docker-compose exec backend sh
-```
-
-### Databázové operace
-
-```bash
-# Backup databáze
-docker-compose exec postgres pg_dump -U postgres productdb > backup.sql
-
-# Restore databáze
-docker-compose exec -T postgres psql -U postgres productdb < backup.sql
-
-# Reset databáze (znovu spustí init.sql)
-docker-compose down -v
-docker-compose up -d
-```
-
-## 📁 Struktura projektu
+## Struktura projektu
 
 ```
 product-catalog/
@@ -260,7 +223,7 @@ product-catalog/
 └── README.md
 ```
 
-## ⚙️ Konfigurace
+## Konfigurace
 
 ### Environment Variables
 
@@ -285,7 +248,7 @@ CACHE_TTL=600  # Cache TTL v sekundách
 VITE_API_URL=http://localhost:5000
 ```
 
-## 🎨 Cache strategie
+## Cache strategie
 
 ### Implementované cache patterns:
 
@@ -303,78 +266,24 @@ VITE_API_URL=http://localhost:5000
 
 ### Výhody:
 
-- ⚡ **Rychlost:** Redis in-memory cache je 10-100x rychlejší než DB
-- 📉 **Snížení zátěže DB:** Opakované requesty nemusí chodit do PostgreSQL
-- 🔄 **Konzistence:** Automatická invalidace při změnách
-- 📊 **Monitoring:** Real-time statistiky hit/miss rate
+- **Rychlost:** Redis in-memory cache je 10-100x rychlejší než DB
+- **Snížení zátěže DB:** Opakované requesty nemusí chodit do PostgreSQL
+- **Konzistence:** Automatická invalidace při změnách
+- **Monitoring:** Real-time statistiky hit/miss rate
 
-## 📊 Monitoring a debugování
+## Monitoring a debugování
 
 ### Backend logy obsahují:
 
-- ✅ Cache HIT/MISS events
-- 💾 Cache set operations
-- 🗑️ Cache invalidation events
-- 📡 HTTP requests
+- Cache HIT/MISS events
+- Cache set operations
+- Cache invalidation events
+- HTTP requests
 
-### Příklad logu:
 
-```
-🚀 Server běží na portu 5000
-✅ Připojení k PostgreSQL úspěšné
-✅ Připojení k Redis úspěšné
-2024-01-10T10:15:30.123Z - GET /api/products/1
-❌ CACHE MISS - Product ID: 1
-💾 Produkt uložen do cache - ID: 1
-2024-01-10T10:15:35.456Z - GET /api/products/1
-✅ CACHE HIT - Product ID: 1
-```
+## Jak ověřit Cache Hit Rate
 
-## 🔧 Troubleshooting
-
-### Port již používán
-
-```bash
-# Windows PowerShell
-Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess
-Stop-Process -Id <PID>
-
-# Linux
-lsof -i :3000
-kill -9 <PID>
-```
-
-### Databáze se neseeds
-
-```bash
-# Odstranit volumes a znovu vytvořit
-docker-compose down -v
-docker-compose up -d
-```
-
-### Redis nepřijímá připojení
-
-```bash
-# Kontrola Redis služby
-docker-compose logs redis
-
-# Restart Redis
-docker-compose restart redis
-```
-
-### Frontend nezobrazuje data
-
-```bash
-# Zkontrolovat API URL
-echo $VITE_API_URL
-
-# Zkontrolovat CORS v backend logu
-docker-compose logs backend | grep CORS
-```
-
-## 🎯 Jak dosáhnout vysokého Cache Hit Rate
-
-### ✅ Správný způsob testování:
+### Správný způsob testování:
 
 ```
 1. Klikněte na STEJNÝ produkt vícekrát (ne různé produkty!)
@@ -389,7 +298,7 @@ Příklad:
 = Hit Rate: 75%
 ```
 
-### ❌ Špatný způsob:
+### Špatný způsob:
 
 ```
 - Klik iPhone (MISS)
@@ -397,61 +306,4 @@ Příklad:
 - Klik AirPods (MISS)
 = Hit Rate: 0% (všechno jsou první načtení!)
 ```
-
-### Automatický test:
-
-```bash
-# PowerShell - 30 requestů na stejný produkt
-for ($i=1; $i -le 30; $i++) {
-    curl http://localhost:5000/api/products/1 | Out-Null
-}
-
-# Zobraz hit rate
-curl http://localhost:5000/api/products/stats/cache
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
