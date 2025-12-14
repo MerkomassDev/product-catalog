@@ -34,12 +34,16 @@ Full-stack webová aplikace pro správu produktového katalogu s implementací R
 └──────────────────┘    └─────────────────────────────┘
 ```
 
+
+<img width="1855" height="846" alt="image" src="https://github.com/user-attachments/assets/dbd2cfe1-1e2a-4ed4-9565-32e3345cab89" />
+
+
 ### Cache Flow
 
-Data se načítají primárně z Redis cache
-Při absenci v cache se načtou z PostgreSQL
-Načtená data se uloží do cache s expirací 10 minut
-Při aktualizaci/smazání se cache invaliduje
+- Data se načítají primárně z Redis cache
+- Při absenci v cache se načtou z PostgreSQL
+- Načtená data se uloží do cache s expirací 10 minut
+- Při aktualizaci/smazání se cache invaliduje
 
 1. **Read Request:**
    - Frontend → Backend
@@ -101,83 +105,76 @@ docker-compose down -v  # Odstranění dat
 ```
 
 
-## API Endpoints
+## Přidání produktu
 
-### Products
+<img width="569" height="802" alt="image" src="https://github.com/user-attachments/assets/e3fcba3b-8298-4fbe-a929-4c2518f65cf9" />
 
-```
-GET    /api/products              - Seznam produktů (s filtrováním)
-GET    /api/products/:id          - Detail produktu (s cache)
-POST   /api/products              - Vytvoření produktu
-PUT    /api/products/:id          - Aktualizace produktu
-DELETE /api/products/:id          - Smazání produktu
-GET    /api/products/categories   - Seznam kategorií
-```
 
-### Cache
+## Vyhledávání produktu
 
-```
-GET    /api/products/stats/cache       - Cache statistiky
-POST   /api/products/cache/invalidate  - Vyprázdnění cache
-```
+<img width="766" height="108" alt="image" src="https://github.com/user-attachments/assets/3ed7a9d9-0c71-480c-b3e8-6f3499673de5" />
 
-### Query Parameters (GET /api/products)
 
-- `search` - Vyhledávání v názvu
-- `category` - Filtr podle kategorie
-- `page` - Číslo stránky (default: 1)
-- `limit` - Počet položek (default: 10)
+## Detail produktu
+
+<img width="384" height="662" alt="image" src="https://github.com/user-attachments/assets/01632c3d-bae1-40d2-8a52-6ee42aea2d9c" />
+
 
 ## Testování Cache
 
-### 1. Cache MISS → HIT test
+### Správný způsob testování:
 
-```bash
-# První request (MISS - načte z DB)
-curl http://localhost:5000/api/products/1
+```
+1. Klikněte na STEJNÝ produkt vícekrát (ne různé produkty!)
+2. První klik = MISS (načte z DB)
+3. Další kliky = HIT (načte z Redis)
 
-# Druhý request (HIT - načte z cache)
-curl http://localhost:5000/api/products/1
+Příklad:
+- Klik iPhone (MISS)
+- Klik iPhone (HIT)
+- Klik iPhone (HIT)
+- Klik iPhone (HIT)
+= Hit Rate: 75%
 ```
 
-Sledujte backend logy:
-```bash
-docker-compose logs -f backend
+<img width="1064" height="540" alt="image" src="https://github.com/user-attachments/assets/31a47b44-4051-4e1b-8cff-2e8e36b79814" />
+
+<img width="778" height="132" alt="image" src="https://github.com/user-attachments/assets/bcca795b-7681-4ba2-a07c-69631f8c9671" />
+
+### Špatný způsob:
+
+```
+- Klik iPhone (MISS)
+- Klik MacBook (MISS)
+- Klik AirPods (MISS)
+= Hit Rate: 0% (všechno jsou první načtení!)
 ```
 
-Měli byste vidět:
-```
-CACHE MISS - Product ID: 1
-Produkt uložen do cache - ID: 1
-CACHE HIT - Product ID: 1
-```
+<img width="764" height="119" alt="image" src="https://github.com/user-attachments/assets/d29a309d-048c-42f7-bb4f-8577c974f852" />
 
-### 2. Sledování cache statistik
 
-Frontend: Sekce "Cache Statistiky" se aktualizuje každých 5 sekund
+## Cache strategie
 
-Backend:
-```bash
-curl http://localhost:5000/api/products/stats/cache
-```
+### Implementované cache patterns:
 
-### 3. RedisInsight UI
+1. **Cache-Aside (Lazy Loading)**
+   - Data se načítají do cache pouze když jsou poprvé požadována
+   - Cache MISS → načti z DB → ulož do cache
 
-1. Otevřete http://localhost:8001
-2. Připojte se k Redis (host: redis, port: 6379)
-3. Sledujte klíče s prefixem `product:*`
+2. **Write-Through Invalidation**
+   - Při UPDATE/DELETE se ihned invaliduje příslušný klíč
+   - Zajišťuje konzistenci dat
 
-### 4. Test invalidace
+3. **TTL (Time To Live)**
+   - Automatická expirace po 10 minutách
+   - Zabraňuje zastaralým datům v cache
 
-```bash
-# Aktualizace produktu (vyprázdní cache)
-curl -X PUT http://localhost:5000/api/products/1 \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Updated Product","price":999,...}'
+### Výhody:
 
-# Následný request bude MISS (cache byla invalidována)
-curl http://localhost:5000/api/products/1
-```
+- **Rychlost:** Redis in-memory cache je 10-100x rychlejší než DB
+- **Snížení zátěže DB:** Opakované requesty nemusí chodit do PostgreSQL
+- **Konzistence:** Automatická invalidace při změnách
+- **Monitoring:** Real-time statistiky hit/miss rate
 
 
 ## Struktura projektu
@@ -248,28 +245,6 @@ CACHE_TTL=600  # Cache TTL v sekundách
 VITE_API_URL=http://localhost:5000
 ```
 
-## Cache strategie
-
-### Implementované cache patterns:
-
-1. **Cache-Aside (Lazy Loading)**
-   - Data se načítají do cache pouze když jsou poprvé požadována
-   - Cache MISS → načti z DB → ulož do cache
-
-2. **Write-Through Invalidation**
-   - Při UPDATE/DELETE se ihned invaliduje příslušný klíč
-   - Zajišťuje konzistenci dat
-
-3. **TTL (Time To Live)**
-   - Automatická expirace po 10 minutách
-   - Zabraňuje zastaralým datům v cache
-
-### Výhody:
-
-- **Rychlost:** Redis in-memory cache je 10-100x rychlejší než DB
-- **Snížení zátěže DB:** Opakované requesty nemusí chodit do PostgreSQL
-- **Konzistence:** Automatická invalidace při změnách
-- **Monitoring:** Real-time statistiky hit/miss rate
 
 ## Monitoring a debugování
 
@@ -281,29 +256,29 @@ VITE_API_URL=http://localhost:5000
 - HTTP requests
 
 
-## Jak ověřit Cache Hit Rate
+## API Endpoints
 
-### Správný způsob testování:
-
-```
-1. Klikněte na STEJNÝ produkt vícekrát (ne různé produkty!)
-2. První klik = MISS (načte z DB)
-3. Další kliky = HIT (načte z Redis)
-
-Příklad:
-- Klik iPhone (MISS)
-- Klik iPhone (HIT)
-- Klik iPhone (HIT)
-- Klik iPhone (HIT)
-= Hit Rate: 75%
-```
-
-### Špatný způsob:
+### Products
 
 ```
-- Klik iPhone (MISS)
-- Klik MacBook (MISS)
-- Klik AirPods (MISS)
-= Hit Rate: 0% (všechno jsou první načtení!)
+GET    /api/products              - Seznam produktů (s filtrováním)
+GET    /api/products/:id          - Detail produktu (s cache)
+POST   /api/products              - Vytvoření produktu
+PUT    /api/products/:id          - Aktualizace produktu
+DELETE /api/products/:id          - Smazání produktu
+GET    /api/products/categories   - Seznam kategorií
 ```
 
+### Cache
+
+```
+GET    /api/products/stats/cache       - Cache statistiky
+POST   /api/products/cache/invalidate  - Vyprázdnění cache
+```
+
+### Query Parameters (GET /api/products)
+
+- `search` - Vyhledávání v názvu
+- `category` - Filtr podle kategorie
+- `page` - Číslo stránky (default: 1)
+- `limit` - Počet položek (default: 10)
